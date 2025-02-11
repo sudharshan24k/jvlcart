@@ -10,7 +10,7 @@ app.use(express.json());
 // Get all products ---> /api/v1/products
 exports.getProducts = async (req, res, next) => {
     const resPerPage =2;
-    const apiFeaturesInstance = new apiFeatures(Product.find(), req.query).search().filter().paginate(); // Renamed variable for clarity
+    const apiFeaturesInstance = new apiFeatures(Product.find(), req.query).search().filter().paginate(resPerPage); // Renamed variable for clarity
 
     const products = await apiFeaturesInstance.query;
     res.status(200).json({

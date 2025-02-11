@@ -1,8 +1,11 @@
 const express = require('express');
-const { registerUser } = require('../controllers/authController');
+const { registerUser, loginUser , logoutUser} = require('../controllers/authController');
 const { model } = require('mongoose');
 const router = express.Router();
 
-router.route('/register').post(registerUser)
+router.route('/register').post(registerUser);
+router.route('/login').post(loginUser);
 
-model.exports = router;
+router.route('/logout').get(logoutUser);
+
+module.exports = router;
