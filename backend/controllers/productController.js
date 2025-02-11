@@ -1,14 +1,18 @@
 const Product = require('../models/productModel');
-const ErrorHandler = require("../utils/errorHandler")
+const ErrorHandler = require("../utils/errorHandler");
+const catchAsyncError = require("../middlewares/catchAsyncError");
+const apiFeatures = require("../utils/apiFeatures"); // Correct capitalization for clarity
 
 const express = require("express");
 const app = express();
 app.use(express.json());
 
-
 // Get all products ---> /api/v1/products
 exports.getProducts = async (req, res, next) => {
-    const products = await Product.find();
+    const resPerPage =2;
+    const apiFeaturesInstance = new apiFeatures(Product.find(), req.query).search().filter().paginate(); // Renamed variable for clarity
+
+    const products = await apiFeaturesInstance.query;
     res.status(200).json({
         success: true,
         count: products.length,
@@ -18,23 +22,14 @@ exports.getProducts = async (req, res, next) => {
 
 
 // Create a new product ---> /api/v1/products/new
-exports.newProduct = async (req, res, next) => {
+exports.newProduct = catchAsyncError(async (req, res, next) => {
     console.log("Incoming request body:", req.body);
-
-    try {
         const product = await Product.create(req.body);
         res.status(201).json({
             success: true,
             product
-        });
-    } catch (error) {
-        console.error("Error creating product:", error);
-        res.status(400).json({
-            success: false,
-            message: error.message,
-        });
-    }
-};
+        });   
+});
 
 
 //get single product ---> /api/v1/products/:id    [GET] request
