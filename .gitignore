@@ -6,10 +6,6 @@ logs
 *.log
 npm-debug.log*
 
-# Environment files
-.env
-.DS_Store
-
 # Cache and build
 dist/
 build/
