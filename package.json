@@ -4,17 +4,21 @@
   "description": "ecommerce using mern stack ! started on 8th feb 2025 , 6pm",
   "main": "server.js",
   "scripts": {
-    "start": "lsof -t -i :8000 | xargs kill -9; node server.js" ,
+    "start": "lsof -t -i :8000 | xargs kill -9; node server.js",
     "dev": "set NODE_ENV=development&&nodemon backend/server.js",
     "prod": "set NODE_ENV=production&&nodemon backend/server.js",
-    "seeder": "node backend/utils/seeder.js"   
+    "seeder": "node backend/utils/seeder.js"
   },
   "author": "sudharshan",
   "license": "ISC",
   "dependencies": {
+    "bcrypt": "^5.1.1",
+    "cookie-parser": "^1.4.7",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
-    "mongoose": "^8.10.0"
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.10.0",
+    "validator": "^13.12.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.9"
