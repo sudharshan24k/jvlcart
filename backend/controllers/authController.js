@@ -8,7 +8,7 @@ const crypto = require("crypto");
 require("dotenv").config();
 
 
-// Registration of new user
+// Registration of new user -->/api/v1/register
 exports.registerUser = catchAsyncError(async (req, res, next) => {
     const { name, email, password, avatar } = req.body;
 
@@ -22,7 +22,7 @@ exports.registerUser = catchAsyncError(async (req, res, next) => {
     sendToken(user, 201, res);
 });
 
-// User Login
+// User Login --> /api/v1/login
 exports.loginUser = catchAsyncError(async (req, res, next) => {
     const { email, password } = req.body;
 
@@ -44,6 +44,7 @@ exports.loginUser = catchAsyncError(async (req, res, next) => {
 });
 
 
+//Logging out --> /api/v1/logout
 exports.logoutUser = (req,res,next)=>{
     res.cookie('token',null,{
         expires: new Date(Date.now()),
@@ -56,6 +57,7 @@ exports.logoutUser = (req,res,next)=>{
 }
 
 
+//Forgot Password --> /api/v1/password/forgot
 exports.forgotPassword = catchAsyncError(async (req, res, next) => {
     const user = await User.findOne({ email: req.body.email }); 
 
@@ -89,16 +91,140 @@ exports.forgotPassword = catchAsyncError(async (req, res, next) => {
     }
 });
 
+//Reset Password --> /api/v1/password/reset/
+exports.resetPassword = catchAsyncError(async (req, res, next) => {
 
-exports.resetPassword = catchAsyncError(async(req,res,next) =>{
-    const resetpasswordToken = crypto.createhash('sha256').update(req.params.token).digest('hex');
+    const resetPasswordToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
 
     const user = await User.findOne({
         resetPasswordToken,
-        resetPasswordExpire: {$gt: Date.now()}
-    })
+        resetPasswordTokenExpire: { $gt: Date.now() } 
+    });
 
-    if(!user){
+    if (!user) {
         return next(new ErrorHandler('Password reset token is invalid or has expired', 400));
     }
+
+    if (req.body.password !== req.body.confirmPassword) {
+        return next(new ErrorHandler("Passwords do not match", 400)); // Fix: Add status code
+    }
+
+    user.password = req.body.password;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordTokenExpire = undefined;
+
+    await user.save({ validateBeforeSave: false });
+
+    sendToken(user, 200, res); 
+});
+
+
+//Get user profile 
+exports.getUserProfile = catchAsyncError(async(req,res,next)=>{
+     const user = await User.findById(req.user.id)
+     res.status(200).json({
+        success:true,
+        user
+     })
+
+})
+
+
+//change Password --> api/v1/password/change
+exports.changePassword = catchAsyncError(async (req, res, next) => {
+    const user = await User.findById(req.user.id).select("+password");
+
+    if (!req.body.oldPassword || !req.body.password) {
+        return next(new ErrorHandler("Please provide both old and new passwords", 400));
+    }
+
+    if (!await user.isValidPassword(req.body.oldPassword)) {
+        return next(new ErrorHandler("Old password is incorrect", 401));
+    }
+
+    if (req.body.oldPassword === req.body.password) {
+        return next(new ErrorHandler("New password cannot be the same as the old password", 400));
+    }
+
+    user.password = req.body.password;
+    await user.save();
+
+    res.status(200).json({
+        success: true,
+        message: "Password updated successfully"
+    });
+});
+
+
+//update Profile --> /api/v1/admin/users
+
+exports.updateProfile = catchAsyncError(async(req,res,next)=>{
+    let newUserData = {
+        name: req.body.name,
+        email: req.body.email
+    }
+
+    const user = await User.findByIdAndUpdate(req.user.id,newUserData,{
+        new:true,
+        runValidators:true
+    })
+
+    res.status(200).json({
+        success:true,
+        user
+    })
+
+})
+
+
+//ADMIN : GetAllusers --> api/v1/admin/user/:id
+exports.getAllUsers = catchAsyncError(async(req,res,next)=>{
+    const users = await User.find();
+    res.status(200).json({
+        success:true,
+        users
+    })
+})
+
+//ADMIN : GetspecificUser --> - api/v1/admin/user/:id
+exports.getUser = catchAsyncError(async(req,res,next)=>{
+    const users = await User.findById(req.params.id);
+    if(!users){
+        return next(new ErrorHandler(`User Not Found with this ${id}`))
+    }
+    res.status(200).json({
+        success:true,
+        users
+    })
+})
+
+exports.updateUser = catchAsyncError(async (req, res, next) => {
+    const newUserData = {
+        name: req.body.name,
+        email: req.body.email,
+        role: req.body.role
+    }
+
+    const user = await User.findByIdAndUpdate(req.params.id, newUserData, {
+        new: true,
+        runValidators: true,
+    })
+
+    res.status(200).json({
+        success: true,
+        user
+    })
+})
+
+//Admin: Delete User - api/v1/admin/user/:id
+exports.deleteUser = catchAsyncError(async (req, res, next) => {
+    const user = await User.findById(req.params.id);
+    if(!user) {
+        return next(new ErrorHandler(`User not found with this id ${req.params.id}`))
+    }
+    await user.deleteOne();
+    res.status(200).json({
+        success: true,
+        message:"user deleted successfully"
+    })
 })
